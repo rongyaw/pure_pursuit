@@ -61,9 +61,20 @@ def callback(data):
     # 2. Find the path point closest to the vehicle that is >= 1 lookahead distance from vehicle's current location.
     x_lookahead = x + LOOKAHEAD_DISTANCE * math.cos(yaw) # Find x coordinate of lookahead point
     y_lookahead = y + LOOKAHEAD_DISTANCE * math.sin(yaw) # Find y coordinate of lookahead point
-    point_lookahead = [x_lookahead, y_lookahead]
-    
+    point_lookahead = np.array([x_lookahead, y_lookahead])
         
+        # Change the path_points to numpy array for easy application
+    path_points_refer = np.asarray(path_points)
+    path_points_refer = path_points_refer[:,0:2]    
+
+    dist_refer = np.array([])
+
+    for point_interest in path_points_refer:
+        dist_refer = np.append(dist_refer, dist(point_lookahead, point_interest))
+    
+        # find the minimum point
+    min_index = np.argmin(dist_refer)
+    path_point = path_points(min_index)
 
     # 3. Transform the goal point to vehicle coordinates. 
     
@@ -72,7 +83,6 @@ def callback(data):
     # 4. Calculate the curvature = 1/r = 2x/l^2
     # The curvature is transformed into steering wheel angle by the vehicle on board controller.
     # Hint: You may need to flip to negative because for the VESC a right steering angle has a negative value.
-    angle = 0.0
     
     angle = np.clip(angle, -0.4189, 0.4189) # 0.4189 radians = 24 degrees because car can only turn 24 degrees max
 
