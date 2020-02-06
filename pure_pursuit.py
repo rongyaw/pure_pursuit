@@ -92,7 +92,7 @@ def callback(data):
     goal_y_veh_coord = glob_y*np.cos(yaw) - glob_x*np.sin(yaw)
     
 
-    # 4. Calculate the curvature = 1/r = 2x/l^2
+    # 4. Find the front wheel turning angle with bicycle model
     diff_angle = path_points_w[goal] - yaw # Find the turning angle
     r = L/(2*math.sin(diff_angle)) # Calculate the turning radius
     angle = 2 * math.atan(0.4/r) # Find the wheel turning radius
