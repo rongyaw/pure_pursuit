@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/rongyaowang/f110_ws/devel/include",
+                "/home/rongyaowang/racecar_sim/devel/include",
+                "/opt/ros/kinetic/include",
+                "/home/rongyaowang/f110_ws/src/f110-fall2018-skeletons/system/racecar/ackermann_cmd_mux/include",
+                "/home/rongyaowang/f110_ws/src/f110-fall2018-skeletons/system/hokuyo_node/include",
+                "/home/rongyaowang/f110_ws/src/f110-fall2018-skeletons/system/serial/include",
+                "/home/rongyaowang/f110_ws/src/f110-fall2018-skeletons/system/vesc/vesc_ackermann/include",
+                "/home/rongyaowang/f110_ws/src/f110-fall2018-skeletons/system/vesc/vesc_driver/include",
+                "/usr/include"
+            ],
+            "name": "Linux",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
