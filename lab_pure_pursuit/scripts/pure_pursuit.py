@@ -14,8 +14,8 @@ import os
 # CONSTANTS #
 #############
 
-LOOKAHEAD_DISTANCE = 2.0 # meters
-VELOCITY = 1.0 # m/s
+LOOKAHEAD_DISTANCE = 0.75 # meters
+VELOCITY = 0.5 # m/s
 
 
 ###########
@@ -30,7 +30,10 @@ with open(filename) as f:
 
 # Turn path_points into a list of floats to eliminate the need for casts in the code below.
 path_points = [(float(point[0]), float(point[1]), float(point[2])) for point in path_points]
-        
+path_points_x = [float(point[0]) for point in path_points]
+path_points_y = [float(point[1]) for point in path_points]
+path_points_w = [float(point[2]) for point in path_points]
+
 # Publisher for 'drive_parameters' (speed and steering angle)
 pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)
 
@@ -51,36 +54,50 @@ def callback(data):
 
     # 1. Determine the current location of the vehicle (we are subscribed to vesc/odom)
     # Hint: Read up on PoseStamped message type in ROS to determine how to extract x, y, and yaw.    
-    P = PoseStamped()
-    x = P.pose.position.x
-    y = P.pose.position.y
-    yaw = P.pose.orientation.z
-    #information = str(x) + ' ' + str(y) + str(yaw)
-    #rospy.loginfo(information)
+    x = data.pose.position.x
+    y = data.pose.position.y
+    qx=data.pose.orientation.x
+    qy=data.pose.orientation.y
+    qz=data.pose.orientation.z
+    qw=data.pose.orientation.w
+
+    quaternion = (qx,qy,qz,qw)
+    euler = euler_from_quaternion(quaternion)
+    yaw = euler[2] 
 
     # 2. Find the path point closest to the vehicle that is >= 1 lookahead distance from vehicle's current location.
-    x_lookahead = x + LOOKAHEAD_DISTANCE * math.cos(yaw) # Find x coordinate of lookahead point
-    y_lookahead = y + LOOKAHEAD_DISTANCE * math.sin(yaw) # Find y coordinate of lookahead point
-    point_lookahead = np.array([x_lookahead, y_lookahead])
-        
-        # Change the path_points to numpy array for easy application
-    path_points_refer = np.asarray(path_points)
-    path_points_refer = path_points_refer[:,0:2]    
+        # Find the distance between current position to tracking point
+    dist_array = np.zeros(len(path_points_x))
 
-    dist_refer = np.array([])
-
-    for point_interest in path_points_refer:
-        dist_refer = np.append(dist_refer, dist(point_lookahead, point_interest))
+    for i in range(len(path_points_x)):
+        dist_array[i] = dist((path_points_x[i], path_points_y[i]), (x,y))
     
-        # find the minimum point
-    min_index = np.argmin(dist_refer)
-    path_point = path_points(min_index)
+    goal = np.argmin(dist_array)
+    goal_array = np.where((dist_array < (LOOKAHEAD_DISTANCE + 0.3)) & (dist_array > (LOOKAHEAD_DISTANCE - 0.3)))[0]
+    for id in goal_array:
+        v1 = [path_points_x[id] - x, path_points_y[id] - y]
+        v2 = [math.cos(yaw), math.sin(yaw)]
+        diff_angle = find_angle(v1,v2)
+        if abs(diff_angle) < np.pi/4:
+            goal = id
+            break
+
+    L = dist_array[goal]
 
     # 3. Transform the goal point to vehicle coordinates. 
-    
+        # Find the distance between goal point to vehicle coordinate
+
+    glob_x = path_points_x[goal] - x
+    glob_y = path_points_y[goal] - y 
+    goal_x_veh_coord = glob_x*np.cos(yaw) + glob_y*np.sin(yaw)
+    goal_y_veh_coord = glob_y*np.cos(yaw) - glob_x*np.sin(yaw)
     
 
     # 4. Calculate the curvature = 1/r = 2x/l^2
+    diff_angle = path_points_w[goal] - yaw
+    r = L/(2*math.sin(diff_angle))
+    angle = 2 * math.atan(0.4/r)
+
     # The curvature is transformed into steering wheel angle by the vehicle on board controller.
     # Hint: You may need to flip to negative because for the VESC a right steering angle has a negative value.
     
@@ -90,7 +107,12 @@ def callback(data):
     msg.velocity = VELOCITY
     msg.angle = angle
     pub.publish(msg)
-    
+
+def find_angle(v1, v2):
+        cosang = np.dot(v1, v2)
+        sinang = LA.norm(np.cross(v1, v2))
+        return np.arctan2(sinang, cosang)
+
 if __name__ == '__main__':
     rospy.init_node('pure_pursuit')
     rospy.Subscriber('/pf/viz/inferred_pose', PoseStamped, callback, queue_size=1)
