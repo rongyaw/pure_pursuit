@@ -72,31 +72,30 @@ def callback(data):
     for i in range(len(path_points_x)):
         dist_array[i] = dist((path_points_x[i], path_points_y[i]), (x,y))
     
-    goal = np.argmin(dist_array)
+    goal = np.argmin(dist_array) # Assume the closet point as the goal point at first
     goal_array = np.where((dist_array < (LOOKAHEAD_DISTANCE + 0.3)) & (dist_array > (LOOKAHEAD_DISTANCE - 0.3)))[0]
     for id in goal_array:
         v1 = [path_points_x[id] - x, path_points_y[id] - y]
         v2 = [math.cos(yaw), math.sin(yaw)]
         diff_angle = find_angle(v1,v2)
-        if abs(diff_angle) < np.pi/4:
+        if abs(diff_angle) < np.pi/4: # Check if the one that is the cloest to the lookahead direction
             goal = id
             break
 
     L = dist_array[goal]
 
     # 3. Transform the goal point to vehicle coordinates. 
-        # Find the distance between goal point to vehicle coordinate
 
-    glob_x = path_points_x[goal] - x
+    glob_x = path_points_x[goal] - x 
     glob_y = path_points_y[goal] - y 
     goal_x_veh_coord = glob_x*np.cos(yaw) + glob_y*np.sin(yaw)
     goal_y_veh_coord = glob_y*np.cos(yaw) - glob_x*np.sin(yaw)
     
 
-    # 4. Calculate the curvature = 1/r = 2x/l^2
-    diff_angle = path_points_w[goal] - yaw
-    r = L/(2*math.sin(diff_angle))
-    angle = 2 * math.atan(0.4/r)
+    # 4. Find the front wheel turning angle with bicycle model
+    diff_angle = path_points_w[goal] - yaw # Find the turning angle
+    r = L/(2*math.sin(diff_angle)) # Calculate the turning radius
+    angle = 2 * math.atan(0.4/r) # Find the wheel turning radius
 
     # The curvature is transformed into steering wheel angle by the vehicle on board controller.
     # Hint: You may need to flip to negative because for the VESC a right steering angle has a negative value.
